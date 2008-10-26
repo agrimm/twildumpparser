@@ -2,7 +2,7 @@
 
 class ProcessAph
 
-  def self.do_analysis(input_filename, output_filename)
+  def do_analysis(input_filename, output_filename)
     input_lines = IO.readlines(input_filename).grep(/../)
     article_details = input_lines.map do |input_line|
       components = input_line.split("\t")
@@ -31,7 +31,7 @@ if __FILE__ == $0
   unless ARGV.size == 2
     raise "Wrong number of arguments!"
   else
-    ProcessAph.do_analysis(ARGV[0], ARGV[1])
+    ProcessAph.new.do_analysis(ARGV[0], ARGV[1])
   end
 end
 

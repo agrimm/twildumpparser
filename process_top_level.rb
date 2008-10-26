@@ -15,7 +15,7 @@ class ProcessTopLevel
       language_code = md[1]
       datestamp = md[2]
       table_type = md[3]
-      repository_id = ProcessingSharedLibrary.find_or_add_repository("repository_creation.sql", language_code)
+      repository_id = ProcessingSharedLibrary.new.find_or_add_repository("repository_creation.sql", language_code)
       if table_type == "redirect"
         script = "./process_redirect_sql.rb"
         repository_id = repository_id.to_s + " 10000"

@@ -1,16 +1,13 @@
 require 'test/unit'
 require 'stringio'
+require 'processing_shared_library'
 
 class TestSQLParsing < Test::Unit::TestCase
   def setup
     @program_test_directory = "program_test_data/"
   end
 
-  # def teardown
-  # end
-
   def test_howiki
-#    system("pwd")
     program_test_directory = "program_test_data/"
     comparison_groups = [ 
 ["original_howiki_redirect.sql", "actual_howiki_redirect.sql", "expected_howiki_redirect.sql", "./process_redirect_sql.rb"], 
@@ -41,37 +38,21 @@ class TestSQLParsing < Test::Unit::TestCase
     end
   end
 
-
-
-  def test_repository_creation
-    require 'process_top_level.rb'
-    program_test_directory = "program_test_data/"
-    test_repository_filename = "test_repository.sql"
-    test_repository_fullname = program_test_directory + test_repository_filename
-    assert !File.exists?(test_repository_fullname)
-    ProcessingSharedLibrary.create_repository_sql_file(test_repository_fullname)
-    actual_contents = File.open(test_repository_fullname).read
-    expected_contents = "insert into `repositories` (id, abbreviation, short_description, created_at, updated_at) VALUES ;"
-    assert_equal actual_contents, expected_contents
-    File.delete(test_repository_fullname)
-    assert !File.exists?(test_repository_fullname)
-  end
-
   def test_repository_searching
-    require 'process_top_level.rb'
     test_repository_fullname = "program_test_data/test_repository_searching_repository.sql"
     test_repository_contents = "insert into `repositories` (id, abbreviation, short_description, created_at, updated_at) VALUES (1,'enwiki','English language wikipedia',now(),now());"
     File.open(test_repository_fullname,"w") do |f|
       f.write(test_repository_contents)
     end
-    assert_equal 1, ProcessingSharedLibrary.find_repository(test_repository_fullname, "en")
-    assert_nil ProcessingSharedLibrary.find_repository(test_repository_fullname, "e")
-    assert_nil ProcessingSharedLibrary.find_repository(test_repository_fullname, "enw")
-    assert_nil ProcessingSharedLibrary.find_repository(test_repository_fullname, "!")
+    processing_shared_library_object = ProcessingSharedLibrary.new
+    assert_equal 1, processing_shared_library_object.find_repository(test_repository_fullname, "en")
+    assert_nil processing_shared_library_object.find_repository(test_repository_fullname, "e")
+    assert_nil processing_shared_library_object.find_repository(test_repository_fullname, "enw")
+    assert_nil processing_shared_library_object.find_repository(test_repository_fullname, "!")
   end
 
   def test_repository_listing
-    require 'process_top_level.rb'
+    require 'process_top_level'
     #TODO: make testing for multiple repositories
     expected_results = [[1,"enwiki","English language Wikipedia", "now()", "now()"],[2,"arwiki","Arabic language Wikipedia", "now()", "now()"]]
     values = [[1,"'enwiki'","'English language Wikipedia'", "now()", "now()"],[2,"'arwiki'","'Arabic language Wikipedia'", "now()", "now()"]]
@@ -80,13 +61,12 @@ class TestSQLParsing < Test::Unit::TestCase
     string = "insert into `repositories` (id, abbreviation, short_description, created_at, updated_at) VALUES "
     string << all_values_string
     stringio = StringIO.new(string)
-    results = ProcessingSharedLibrary.list_repositories(stringio)
+    processing_shared_library_object = ProcessingSharedLibrary.new
+    results = processing_shared_library_object.list_repositories(stringio)
     assert_equal expected_results, results
 
-#    stringio.rewind
-#    puts ProcessTopLevel.find_unused_repository_id(stringio)
     stringio.rewind
-    assert ProcessingSharedLibrary.find_unused_repository_id(stringio) == 3
+    assert processing_shared_library_object.find_unused_repository_id(stringio) == 3
   end
 
   def test_repository_adding
@@ -94,13 +74,15 @@ class TestSQLParsing < Test::Unit::TestCase
     original_text = "insert into `repositories` (id, abbreviation, short_description, created_at, updated_at) VALUES (1,'enwiki','English language Wikipedia',now(),now());"
     expected_text = "insert into `repositories` (id, abbreviation, short_description, created_at, updated_at) VALUES (1,'enwiki','English language Wikipedia',now(),now()),(2,'arwiki','Arabic language Wikipedia',now(),now());" 
     full_filename = "program_test_data/test_adding_repository.sql"
+    File.delete(full_filename) if File.exists?(full_filename)
     File.open(full_filename, "w") do |f|
       f.write(original_text)
     end
-    assert_equal 2, ProcessingSharedLibrary.add_repository(full_filename, "ar")
-    assert_raise (RuntimeError) {ProcessingSharedLibrary.add_repository(full_filename, "en")}
-    assert_raise (RuntimeError) {ProcessingSharedLibrary.add_repository(full_filename, "!")}
-    assert_raise (RuntimeError) {ProcessingSharedLibrary.add_repository(full_filename, "ar")}
+    processing_shared_library_object = ProcessingSharedLibrary.new
+    assert_equal 2, processing_shared_library_object.add_repository(full_filename, "ar")
+    assert_raise (RuntimeError) {processing_shared_library_object.add_repository(full_filename, "en")}
+    assert_raise (RuntimeError) {processing_shared_library_object.add_repository(full_filename, "!")}
+    assert_raise (RuntimeError) {processing_shared_library_object.add_repository(full_filename, "ar")}
     assert_equal expected_text, IO.read(full_filename)
   end
 
@@ -110,17 +92,19 @@ class TestSQLParsing < Test::Unit::TestCase
     original_text = ""
     expected_text = "insert into `repositories` (id, abbreviation, short_description, created_at, updated_at) VALUES (1,'enwiki','English language Wikipedia',now(),now()),(2,'arwiki','Arabic language Wikipedia',now(),now());" 
     full_filename = "program_test_data/test_adding_repository.sql"
-#    File.open(full_filename, "w") do |f|
-#      f.write(original_text)
-#    end
-    assert_equal 1, ProcessingSharedLibrary.find_or_add_repository(full_filename, "en")
-    assert_equal 1, ProcessingSharedLibrary.find_repository(full_filename, "en")
-    assert_equal 1, ProcessingSharedLibrary.find_or_add_repository(full_filename, "en")
-    assert_equal 1, ProcessingSharedLibrary.find_or_add_repository(full_filename, "en")
-    assert_equal 2, ProcessingSharedLibrary.find_or_add_repository(full_filename, "ar")
-    assert_equal 2, ProcessingSharedLibrary.find_or_add_repository(full_filename, "ar")
-    assert_equal 2, ProcessingSharedLibrary.find_or_add_repository(full_filename, "ar")
-    assert_raise (RuntimeError) {ProcessingSharedLibrary.find_or_add_repository(full_filename, "!")}
+    File.delete(full_filename) if File.exists?(full_filename)
+    File.open(full_filename, "w") do |f|
+      f.write(original_text)
+    end
+    processing_shared_library_object = ProcessingSharedLibrary.new
+    assert_equal 1, processing_shared_library_object.find_or_add_repository(full_filename, "en")
+    assert_equal 1, processing_shared_library_object.find_repository(full_filename, "en")
+    assert_equal 1, processing_shared_library_object.find_or_add_repository(full_filename, "en")
+    assert_equal 1, processing_shared_library_object.find_or_add_repository(full_filename, "en")
+    assert_equal 2, processing_shared_library_object.find_or_add_repository(full_filename, "ar")
+    assert_equal 2, processing_shared_library_object.find_or_add_repository(full_filename, "ar")
+    assert_equal 2, processing_shared_library_object.find_or_add_repository(full_filename, "ar")
+    assert_raise (RuntimeError) {processing_shared_library_object.find_or_add_repository(full_filename, "!")}
     assert_equal expected_text, IO.read(full_filename)
   end
 
@@ -130,9 +114,8 @@ class TestSQLParsing < Test::Unit::TestCase
     input_filename = @program_test_directory + "aph_reps_fragment.txt"
     actual_filename = @program_test_directory + "actual_aph_articles.sql"
     expected_filename = @program_test_directory + "expected_aph_articles.sql"
-    #expected_text = IO.read(expected_filename)
     File.delete(actual_filename) if File.exist?(actual_filename)
-    ProcessAph.do_analysis(input_filename, actual_filename)
+    ProcessAph.new.do_analysis(input_filename, actual_filename)
     assert File.exist?(actual_filename)
     assert_equal IO.read(expected_filename), IO.read(actual_filename)
   end
