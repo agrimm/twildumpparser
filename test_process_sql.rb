@@ -93,9 +93,9 @@ class TestSQLParsing < Test::Unit::TestCase
     expected_text = "insert into `repositories` (id, abbreviation, short_description, created_at, updated_at) VALUES (1,'enwiki','English language Wikipedia',now(),now()),(2,'arwiki','Arabic language Wikipedia',now(),now());" 
     full_filename = "program_test_data/test_adding_repository.sql"
     File.delete(full_filename) if File.exists?(full_filename)
-    File.open(full_filename, "w") do |f|
-      f.write(original_text)
-    end
+    #File.open(full_filename, "w") do |f|
+    #  f.write(original_text)
+    #end
     processing_shared_library_object = ProcessingSharedLibrary.new
     assert_equal 1, processing_shared_library_object.find_or_add_repository(full_filename, "en")
     assert_equal 1, processing_shared_library_object.find_repository(full_filename, "en")

@@ -78,12 +78,7 @@ class ProcessingSharedLibrary
 
   def add_repository(filename, language_code)
     #Check that it isn't already in there
-    raise "Already exists" unless find_repository(filename, language_code).nil?
-    if File.exists?(filename)
-      repository_id = find_unused_repository_id(File.open(filename))
-    else
-      repository_id = 1
-    end
+    raise "Already exists" unless find_repository(filename, language_code).nil? #Not heckle proof
     language_code_object = LanguageCode.new
     raise "Language code not found" if language_code_object.language_code[language_code].nil?
     abbreviation = language_code + "wiki"
@@ -91,14 +86,16 @@ class ProcessingSharedLibrary
     created_at = "now()"
     updated_at = "now()"
     if File.exists?(filename)
+      repository_id = find_unused_repository_id(File.open(filename))
       file_text = File.open(filename).read
     else
-      file_text = ""
+      repository_id = 1 
+      file_text = "" 
     end
     if file_text.strip.empty?
       file_text = "insert into `repositories` (id, abbreviation, short_description, created_at, updated_at) VALUES ;"
     end
-    file_text.gsub!(/( |\));\Z/) do |string|
+    file_text.gsub!(/( |\));\Z/) do
       if $1 == " "
         $1 + "(#{repository_id},'#{abbreviation}','#{short_description}',#{created_at},#{updated_at});"
       else
