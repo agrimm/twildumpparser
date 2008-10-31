@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'stringio'
 require 'processing_shared_library'
+require 'process_aph'
 
 class TestSQLParsing < Test::Unit::TestCase
   def setup
@@ -52,7 +53,6 @@ class TestSQLParsing < Test::Unit::TestCase
   end
 
   def test_repository_listing
-    require 'process_top_level'
     #TODO: make testing for multiple repositories
     expected_results = [[1,"enwiki","English language Wikipedia", "now()", "now()"],[2,"arwiki","Arabic language Wikipedia", "now()", "now()"]]
     values = [[1,"'enwiki'","'English language Wikipedia'", "now()", "now()"],[2,"'arwiki'","'Arabic language Wikipedia'", "now()", "now()"]]
@@ -70,7 +70,6 @@ class TestSQLParsing < Test::Unit::TestCase
   end
 
   def test_repository_adding
-    require 'process_top_level.rb'
     original_text = "insert into `repositories` (id, abbreviation, short_description, created_at, updated_at) VALUES (1,'enwiki','English language Wikipedia',now(),now());"
     expected_text = "insert into `repositories` (id, abbreviation, short_description, created_at, updated_at) VALUES (1,'enwiki','English language Wikipedia',now(),now()),(2,'arwiki','Arabic language Wikipedia',now(),now());" 
     full_filename = "program_test_data/test_adding_repository.sql"
@@ -86,9 +85,7 @@ class TestSQLParsing < Test::Unit::TestCase
     assert_equal expected_text, IO.read(full_filename)
   end
 
-  def test_repository_adding
-    require 'process_top_level.rb'
-    #original_text = "insert into `repositories` (id, abbreviation, short_description, created_at, updated_at) VALUES ;"
+  def test_repository_finding_or_adding
     original_text = ""
     expected_text = "insert into `repositories` (id, abbreviation, short_description, created_at, updated_at) VALUES (1,'enwiki','English language Wikipedia',now(),now()),(2,'arwiki','Arabic language Wikipedia',now(),now());" 
     full_filename = "program_test_data/test_adding_repository.sql"
@@ -110,7 +107,6 @@ class TestSQLParsing < Test::Unit::TestCase
 
   #Test that handling of Australian parliament data works
   def test_aph_processing
-    require 'process_aph'
     input_filename = @program_test_directory + "aph_reps_fragment.txt"
     actual_filename = @program_test_directory + "actual_aph_articles.sql"
     expected_filename = @program_test_directory + "expected_aph_articles.sql"

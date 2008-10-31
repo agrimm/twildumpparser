@@ -24,13 +24,10 @@ class ProcessingSharedLibrary
   #Return an array containing all of the repositories listed
   def list_repositories(file)
     repository_text = file.read
-#    puts repository_text, "***"
-    int, varchar, double, comma, function = ProcessingSharedLibrary.int, ProcessingSharedLibrary.varchar, ProcessingSharedLibrary.double, ProcessingSharedLibrary.comma, ProcessingSharedLibrary.function
+    int, varchar, function = ProcessingSharedLibrary.int, ProcessingSharedLibrary.varchar, ProcessingSharedLibrary.function
     fields = [int, varchar, varchar, function, function]
     record_re = /#{'\\((' + fields.join( '),(' ) + ')\\)'}/
-#    puts record_re, "!!!"
     results = []
-#    raise "No match found between #{repository_text} and #{record_re}" unless repository_text =~ record_re
     repository_text.scan(record_re) do |id_match, abbreviation_match, short_description_match, created_at_match, updated_at_match|
       id = Integer(id_match)
       abbreviation = abbreviation_match[1..-2]
@@ -48,16 +45,12 @@ class ProcessingSharedLibrary
       return nil
     end
     repository_text = IO.read(filename)
-#    puts repository_text, repository_text.class
-    int, varchar, double, comma, function = ProcessingSharedLibrary.int, ProcessingSharedLibrary.varchar, ProcessingSharedLibrary.double, ProcessingSharedLibrary.comma, ProcessingSharedLibrary.function
+    int, varchar, function = ProcessingSharedLibrary.int, ProcessingSharedLibrary.varchar, ProcessingSharedLibrary.function
     fields = [int, varchar, varchar, function, function]
     record_re = /#{'\\((' + fields.join( '),(' ) + ')\\)'}/
     desired_abbreviation = "'" + language_code + "wiki'"
-#    raise "No match found between #{repository_text} and #{record_re}" unless repository_text =~ record_re
     repository_text.scan(record_re) do |id_match, abbreviation_match, short_description_match, created_at_match, updated_at_match|
-#      puts id_match, abbreviation_match, short_description_match, created_at_match, updated_at_match
       if desired_abbreviation == abbreviation_match
-#        puts "id match is #{id_match}"
         return Integer(id_match)
       end
     end
