@@ -1,30 +1,30 @@
 class ProcessingSharedLibrary
   #Definitions for int, varchar, double, comma
-  def self.int
+  def int
     int = '-?\\d*'
   end
 
-  def self.varchar
+  def varchar
     varchar = '\'(?:[^\\\']|\\\\\\\')*\''
   end
 
-  def self.double
+  def double
     double = '-?(?:\\d+\\.\\d+|\\d\\.\\d+e\\-\\d+)'
   end
 
-  def self.comma
+  def comma
     comma = ','
   end
 
   #For sql code like now()
-  def self.function
+  def function
     function = '\w+\(\)'
   end
 
   #Return an array containing all of the repositories listed
   def list_repositories(file)
     repository_text = file.read
-    int, varchar, function = ProcessingSharedLibrary.int, ProcessingSharedLibrary.varchar, ProcessingSharedLibrary.function
+    int, varchar, function = self.int, self.varchar, self.function
     fields = [int, varchar, varchar, function, function]
     record_re = /#{'\\((' + fields.join( '),(' ) + ')\\)'}/
     results = []
@@ -45,7 +45,7 @@ class ProcessingSharedLibrary
       return nil
     end
     repository_text = IO.read(filename)
-    int, varchar, function = ProcessingSharedLibrary.int, ProcessingSharedLibrary.varchar, ProcessingSharedLibrary.function
+    int, varchar, function = self.int, self.varchar, self.function
     fields = [int, varchar, varchar, function, function]
     record_re = /#{'\\((' + fields.join( '),(' ) + ')\\)'}/
     desired_abbreviation = "'" + language_code + "wiki'"

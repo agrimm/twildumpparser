@@ -3,8 +3,7 @@
 #general handling routine
 #the user should call this, rather than process_redirect_sql.rb or the like
 
-#require 'language_code.rb'
-require 'processing_shared_library.rb'
+require 'processing_shared_library'
 
 class ProcessTopLevel
   def self.main_method

@@ -79,9 +79,9 @@ class TestSQLParsing < Test::Unit::TestCase
     end
     processing_shared_library_object = ProcessingSharedLibrary.new
     assert_equal 2, processing_shared_library_object.add_repository(full_filename, "ar")
-    assert_raise (RuntimeError) {processing_shared_library_object.add_repository(full_filename, "en")}
-    assert_raise (RuntimeError) {processing_shared_library_object.add_repository(full_filename, "!")}
-    assert_raise (RuntimeError) {processing_shared_library_object.add_repository(full_filename, "ar")}
+    assert_message_raised("Already exists") {processing_shared_library_object.add_repository(full_filename, "en")}
+    assert_message_raised("Language code not found") {processing_shared_library_object.add_repository(full_filename, "!")}
+    assert_message_raised("Already exists") {processing_shared_library_object.add_repository(full_filename, "ar")}
     assert_equal expected_text, IO.read(full_filename)
   end
 
@@ -114,6 +114,19 @@ class TestSQLParsing < Test::Unit::TestCase
     ProcessAph.new.do_analysis(input_filename, actual_filename)
     assert File.exist?(actual_filename)
     assert_equal IO.read(expected_filename), IO.read(actual_filename)
+  end
+
+  #Assert that a run time error is raised with a specific error message
+  def assert_message_raised(message)
+    begin
+      yield
+    rescue RuntimeError => error
+      assert error.to_s == message, "Wrong runtime error message delivered"
+    rescue
+      assert false, "Different error type raised"
+    else
+      assert false, "No error raised"
+    end
   end
 end
 
