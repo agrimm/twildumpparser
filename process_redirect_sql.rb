@@ -8,17 +8,17 @@ class ProcessRedirectSql
   def main_method(repository_id, maximum_repository_statements, input_file, output_file)
     raise if maximum_repository_statements < 0
     raise if repository_id < 0
+
     processing_shared_library_object = ProcessingSharedLibrary.new
+
     int = processing_shared_library_object.int
     varchar = processing_shared_library_object.varchar
-    double = processing_shared_library_object.double
-    comma = processing_shared_library_object.comma
 
     fields = [int, int, varchar] #rd_from, rd_namespace, rd_title
     record = '\\((' + fields.join( '),(' ) + ')\\)'
 
     while line = input_file.gets
-      raise "Problem" if line =~ /INSERT INTO/i
+      #raise "Problem" if line =~ /INSERT INTO/i
       break if line =~ /DROP TABLE/i
       output_file.print line
     end
@@ -32,7 +32,7 @@ class ProcessRedirectSql
 
     while line = input_file.gets
       #Replace with (repository_id, first field, third field, now(), now())
-      line.gsub!(/#{record}(,|;)/) do |s|
+      line.gsub!(/#{record}(,|;)/) do
         namespace = Integer($2)
         if namespace == 0
           if repository_statements_size != maximum_repository_statements
