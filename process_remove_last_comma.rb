@@ -4,14 +4,16 @@ $KCODE = 'utf8' #Probably redundant
 require 'jcode' #http://www.fngtps.com/sections/Unicode
 
 class ProcessRemoveLastComma
-  def main_method
-    while line = gets
+  def main_method(input_file, output_file)
+    while line = input_file.gets
       line.gsub!(/,;/,";")
       line.gsub!(/INSERT INTO [^)(]* \([^)(]*\) VALUES (;|\n)/,"")
-      print line
+      output_file.print line
     end
   end
 end
 
-ProcessRemoveLastComma.new.main_method
+if $0 == __FILE__
+  ProcessRemoveLastComma.new.main_method(STDIN, STDOUT)
+end
 

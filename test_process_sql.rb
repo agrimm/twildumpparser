@@ -2,10 +2,17 @@ require 'test/unit'
 require 'stringio'
 require 'processing_shared_library'
 require 'process_aph'
+require 'process_top_level'
 
 class TestSQLParsing < Test::Unit::TestCase
   def setup
     @program_test_directory = "program_test_data/"
+    actual_filenames_without_directory = ["actual_howiki_redirect.sql", "actual_howiki_page.sql", "actual_howiki_redirect_with_new_statements.sql", "actual_howiki_redirect_with_nomainspace.sql", "test_adding_repository.sql", "actual_aph_articles.sql"]
+    actual_filenames_without_directory.each do |filename_without_directory|
+      filename = @program_test_directory + filename_without_directory
+      File.delete(filename) if File.exists?(filename)
+    end
+    File.delete("howiki-20080616-page-fully-processed.sql") if File.exists?("howiki-20080616-page-fully-processed.sql")
   end
 
   def test_howiki
@@ -28,14 +35,26 @@ class TestSQLParsing < Test::Unit::TestCase
   def test_new_statement_addition
     program_test_directory = "program_test_data/"
     comparison_groups = [
-["original_howiki_redirect.sql", "actual_howiki_redirect_with_new_statements.sql", "expected_howiki_redirect_with_new_statements.sql", "./process_redirect_sql.rb", ["3", "1"] ], 
-["nomainspace_howiki_redirect.sql", "actual_howiki_redirect_with_nomainspace.sql", "expected_howiki_redirect_with_nomainspace.sql", "./process_redirect_sql.rb", ["3", "1"] ] 
+["original_howiki_redirect.sql", "actual_howiki_redirect_with_new_statements.sql", "expected_howiki_redirect_with_new_statements.sql", "./process_redirect_sql.rb", [3, 1] ], 
+["nomainspace_howiki_redirect.sql", "actual_howiki_redirect_with_nomainspace.sql", "expected_howiki_redirect_with_nomainspace.sql", "./process_redirect_sql.rb", [3, 1] ] 
 ]
     comparison_groups.each do |original_file_name, actual_file_name, expected_file_name, script, options|
-      system("cat #{program_test_directory + original_file_name} | #{script} #{options.join(" ")} | ./process_remove_last_comma.rb > #{program_test_directory + actual_file_name}")
-      text1 = IO.read("#{program_test_directory + expected_file_name}")
-      text2 = IO.read("#{program_test_directory + actual_file_name}")
-      assert_equal text1, text2
+      process_redirect_sql_object = ProcessRedirectSql.new
+      process_remove_last_comma_object = ProcessRemoveLastComma.new
+      repository_id, maximum_repository_statements = options
+      File.open(program_test_directory + original_file_name) do |original_file|
+        almost_processed_file = StringIO.new
+        fully_processed_file = StringIO.new
+
+        process_redirect_sql_object.main_method(repository_id, maximum_repository_statements, original_file, almost_processed_file)
+        almost_processed_file.rewind
+        process_remove_last_comma_object.main_method(almost_processed_file, fully_processed_file)
+        fully_processed_file.rewind
+
+        text1 = IO.read("#{program_test_directory + expected_file_name}")
+        text2 = fully_processed_file.read
+        assert_equal text1, text2
+      end
     end
   end
 
@@ -73,7 +92,6 @@ class TestSQLParsing < Test::Unit::TestCase
     original_text = "insert into `repositories` (id, abbreviation, short_description, created_at, updated_at) VALUES (1,'enwiki','English language Wikipedia',now(),now());"
     expected_text = "insert into `repositories` (id, abbreviation, short_description, created_at, updated_at) VALUES (1,'enwiki','English language Wikipedia',now(),now()),(2,'arwiki','Arabic language Wikipedia',now(),now());" 
     full_filename = "program_test_data/test_adding_repository.sql"
-    File.delete(full_filename) if File.exists?(full_filename)
     File.open(full_filename, "w") do |f|
       f.write(original_text)
     end
@@ -89,7 +107,6 @@ class TestSQLParsing < Test::Unit::TestCase
     original_text = ""
     expected_text = "insert into `repositories` (id, abbreviation, short_description, created_at, updated_at) VALUES (1,'enwiki','English language Wikipedia',now(),now()),(2,'arwiki','Arabic language Wikipedia',now(),now());" 
     full_filename = "program_test_data/test_adding_repository.sql"
-    File.delete(full_filename) if File.exists?(full_filename)
     #File.open(full_filename, "w") do |f|
     #  f.write(original_text)
     #end
@@ -105,12 +122,34 @@ class TestSQLParsing < Test::Unit::TestCase
     assert_equal expected_text, IO.read(full_filename)
   end
 
+  #Test that process top level can handle article dumps
+  def test_process_top_level_handling_articles
+    original_article_dump_filename = @program_test_directory + "howiki-20080616-page.sql"
+    expected_article_filename = @program_test_directory + "expected_howiki-20080616-page.sql"
+    actual_article_filename = "howiki-20080616-page-fully-processed.sql"
+    repository_creation_filename = @program_test_directory + "two_item_repository.sql"
+    process_top_level_object = ProcessTopLevel.new
+    process_top_level_object.main_method(repository_creation_filename, [original_article_dump_filename])
+    assert File.read(expected_article_filename) == File.read(actual_article_filename)
+  end
+
+  #Test that process top level can handle redirect dumps
+  def test_process_top_level_handling_redirects
+    original_redirect_dump_filename = @program_test_directory + "howiki-20000101-redirect.sql"
+    expected_redirect_filename = @program_test_directory + "expected_howiki_redirect.sql"
+    actual_redirect_filename = "howiki-20000101-redirect-fully-processed.sql"
+    repository_creation_filename = @program_test_directory + "two_item_repository.sql"
+    process_top_level_object = ProcessTopLevel.new
+    process_top_level_object.main_method(repository_creation_filename, [original_redirect_dump_filename])
+    assert File.read(expected_redirect_filename) == File.read(actual_redirect_filename)
+  end
+
+
   #Test that handling of Australian parliament data works
   def test_aph_processing
     input_filename = @program_test_directory + "aph_reps_fragment.txt"
     actual_filename = @program_test_directory + "actual_aph_articles.sql"
     expected_filename = @program_test_directory + "expected_aph_articles.sql"
-    File.delete(actual_filename) if File.exist?(actual_filename)
     ProcessAph.new.do_analysis(input_filename, actual_filename)
     assert File.exist?(actual_filename)
     assert_equal IO.read(expected_filename), IO.read(actual_filename)

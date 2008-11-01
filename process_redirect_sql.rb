@@ -5,7 +5,9 @@ require 'jcode' #http://www.fngtps.com/sections/Unicode
 require 'processing_shared_library'
 
 class ProcessRedirectSql
-  def main_method(repository_id, maximum_repository_statements)
+  def main_method(repository_id, maximum_repository_statements, input_file, output_file)
+    raise if maximum_repository_statements < 0
+    raise if repository_id < 0
     processing_shared_library_object = ProcessingSharedLibrary.new
     int = processing_shared_library_object.int
     varchar = processing_shared_library_object.varchar
@@ -15,20 +17,20 @@ class ProcessRedirectSql
     fields = [int, int, varchar] #rd_from, rd_namespace, rd_title
     record = '\\((' + fields.join( '),(' ) + ')\\)'
 
-    while line = gets
+    while line = input_file.gets
       raise "Problem" if line =~ /INSERT INTO/i
       break if line =~ /DROP TABLE/i
-      print line
+      output_file.print line
     end
 
-    while line = gets
+    while line = input_file.gets
       break if line.include?("TYPE=")
       #Don't print the line
     end
 
     repository_statements_size = 1
 
-    while line = gets
+    while line = input_file.gets
       #Replace with (repository_id, first field, third field, now(), now())
       line.gsub!(/#{record}(,|;)/) do |s|
         namespace = Integer($2)
@@ -49,13 +51,16 @@ class ProcessRedirectSql
       line.gsub!(/INSERT INTO `redirect` VALUES/, 'INSERT INTO `redirects` (redirect_source_repository_id, redirect_source_local_id, redirect_target_title, created_at, updated_at) VALUES')
       line.gsub!(/LOCK TABLES `redirect` WRITE;/, 'LOCK TABLES `redirects` WRITE;')
       line.gsub!(/ALTER TABLE `redirect`/, 'ALTER TABLE `redirects`')
-      print line
+      output_file.print line
     end
   end
 end
 
-repository_id = Integer(ARGV.shift)
-maximum_repository_statements = Integer(ARGV.shift)
-
-ProcessRedirectSql.new.main_method(repository_id, maximum_repository_statements)
+if $0 == __FILE__
+  repository_id = Integer(ARGV.shift)
+  maximum_repository_statements = Integer(ARGV.shift)
+  input_file = STDIN
+  output_file = STDOUT
+  ProcessRedirectSql.new.main_method(repository_id, maximum_repository_statements, input_file, output_file)
+end
 
