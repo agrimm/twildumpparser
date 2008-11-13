@@ -111,6 +111,14 @@ class ProcessingSharedLibrary
     return repository_id
   end
 
+  def process_part_before_drop_table(input_file, output_file)
+    while line = input_file.gets
+      #raise "Problem" if line =~ /INSERT INTO/i
+      break if line =~ /DROP TABLE/i
+      output_file.print line
+    end
+  end
+
 end
 
 class LanguageCode

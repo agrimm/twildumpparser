@@ -2,6 +2,7 @@
 
 $KCODE = 'utf8' #Probably redundant
 require 'jcode' #http://www.fngtps.com/sections/Unicode
+require 'processing_shared_library'
 
 class ProcessPageSql
   def main_method(repository_id, input_file, output_file)
@@ -12,11 +13,8 @@ class ProcessPageSql
 
     autodetected_fields = []
 
-    while line = input_file.gets
-      #raise "Problem" if line =~ /INSERT INTO/i
-      break if line =~ /DROP TABLE/i
-      output_file.print line
-    end
+    processing_shared_library_object = ProcessingSharedLibrary.new
+    processing_shared_library_object.process_part_before_drop_table(input_file, output_file)
 
     while line = input_file.gets
       break if line.include?("TYPE=")

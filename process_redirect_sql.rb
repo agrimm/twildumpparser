@@ -17,11 +17,7 @@ class ProcessRedirectSql
     fields = [int, int, varchar] #rd_from, rd_namespace, rd_title
     record = '\\((' + fields.join( '),(' ) + ')\\)'
 
-    while line = input_file.gets
-      #raise "Problem" if line =~ /INSERT INTO/i
-      break if line =~ /DROP TABLE/i
-      output_file.print line
-    end
+    processing_shared_library_object.process_part_before_drop_table(input_file, output_file)
 
     while line = input_file.gets
       break if line.include?("TYPE=")
