@@ -12,7 +12,8 @@ class TestSQLParsing < Test::Unit::TestCase
       filename = @program_test_directory + filename_without_directory
       File.delete(filename) if File.exists?(filename)
     end
-    File.delete("howiki-20080616-page-fully-processed.sql") if File.exists?("howiki-20080616-page-fully-processed.sql")
+    filenames_in_root_directory = ["howiki-20080616-page-fully-processed.sql", "howiki-20000101-redirect-almost-processed.sql", "howiki-20000101-redirect-fully-processed.sql", "howiki-20080616-page-almost-processed.sql"]
+    filenames_in_root_directory.each {|filename| File.delete(filename) if File.exists?(filename)}
   end
 
   def test_howiki
