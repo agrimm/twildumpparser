@@ -45,6 +45,8 @@ class ProcessTopLevel
   end
 end
 
-input_filenames = ARGV.dup
-ProcessTopLevel.new.main_method("repository_creation.sql", input_filenames)
+if $0 == __FILE__
+  input_filenames = ARGV.dup
+  ProcessTopLevel.new.main_method("repository_creation.sql", input_filenames)
+end
 
