@@ -115,6 +115,8 @@ class ProcessingSharedLibrary
     while line = input_file.gets
       #raise "Problem" if line =~ /INSERT INTO/i
       break if line =~ /DROP TABLE/i
+      long_dash_line = /---/
+      next if line =~ long_dash_line
       output_file.print line
     end
   end

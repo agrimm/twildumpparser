@@ -1,7 +1,6 @@
 -- MySQL dump 8.23
 --
 -- Host: 10.0.0.102    Database: howiki
----------------------------------------------------------
 -- Server version	4.0.40-wikimedia-log
 
 --
