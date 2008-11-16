@@ -5,16 +5,15 @@ require 'jcode' #http://www.fngtps.com/sections/Unicode
 require 'processing_shared_library'
 
 class ProcessPageSql
-  def main_method(repository_id, input_file, output_file)
-    int = '\\d*'
-    varchar = '\'(?:[^\\\']|\\\\\\\')*\''
-    double = '(?:\\d+\\.\\d+|\\d\\.\\d+e\\-\\d+)'
-    comma = ','
+
+  def detect_fields(input_file)
+    processing_shared_library_object = ProcessingSharedLibrary.new
+
+    int = processing_shared_library_object.int
+    varchar = processing_shared_library_object.varchar
+    double = processing_shared_library_object.double
 
     autodetected_fields = []
-
-    processing_shared_library_object = ProcessingSharedLibrary.new
-    processing_shared_library_object.process_part_before_drop_table(input_file, output_file)
 
     while line = input_file.gets
       break if line.include?("TYPE=")
@@ -29,14 +28,17 @@ class ProcessPageSql
       end
       #Don't print the line
     end
+    autodetected_fields
+  end
 
-    #fields = [int, int, varchar, varchar, int, int, int, double, varchar, int, int] #For enwiki
-    fields = [int, int, varchar, varchar, int, int, int, double, varchar, int, int, int] #For kuwiki
 
-    #unless autodetected_fields == [int, int, varchar, varchar, int, int, int, double, varchar, int, int] or autodetected_fields == [int, int, varchar, varchar, int, int, int, double, varchar, int, int, int]
-    #  raise "Mismatch between #{autodetected_fields.join", "} and both #{[int, int, varchar, varchar, int, int, int, double, varchar, int, int].join", "} and #{[int, int, varchar, varchar, int, int, int, double, varchar, int, int, int].join", "}"
-    #end
-    fields = autodetected_fields
+
+  def main_method(repository_id, input_file, output_file)
+    processing_shared_library_object = ProcessingSharedLibrary.new
+
+    processing_shared_library_object.process_part_before_drop_table(input_file, output_file)
+
+    fields = detect_fields(input_file)
 
     record = '\\((' + fields.join( '),(' ) + ')\\)'
     while line = input_file.gets
