@@ -7,7 +7,7 @@ require 'process_top_level'
 class TestSQLParsing < Test::Unit::TestCase
   def setup
     @program_test_directory = "program_test_data/"
-    actual_filenames_without_directory = ["actual_howiki_redirect.sql", "actual_howiki_page.sql", "actual_howiki_redirect_with_new_statements.sql", "actual_howiki_redirect_with_nomainspace.sql", "test_adding_repository.sql", "actual_aph_articles.sql"]
+    actual_filenames_without_directory = ["actual_howiki_redirect_with_new_statements.sql", "actual_howiki_redirect_with_nomainspace.sql", "test_adding_repository.sql", "actual_aph_articles.sql"]
     actual_filenames_without_directory.each do |filename_without_directory|
       filename = @program_test_directory + filename_without_directory
       File.delete(filename) if File.exists?(filename)
@@ -16,19 +16,48 @@ class TestSQLParsing < Test::Unit::TestCase
     filenames_in_root_directory.each {|filename| File.delete(filename) if File.exists?(filename)}
   end
 
-  def test_howiki
-    program_test_directory = "program_test_data/"
+  def test_howiki_pages
+    repository_id = 3
     comparison_groups = [ 
-["original_howiki_redirect.sql", "actual_howiki_redirect.sql", "expected_howiki_redirect.sql", "./process_redirect_sql.rb"], 
-["original_howiki_redirect_mod_1.sql", "actual_howiki_redirect.sql", "expected_howiki_redirect.sql", "./process_redirect_sql.rb"], 
-["simplified_original_howiki-20080616-page.sql", "actual_howiki_page.sql", "expected_howiki-20080616-page.sql", "./process_page_sql.rb"],
-["simplified_original_howiki-20080616-page_mod_1.sql", "actual_howiki_page.sql", "expected_howiki-20080616-page.sql", "./process_page_sql.rb"],
-["simplified_original_howiki-20080616-page_mod_2.sql", "actual_howiki_page.sql", "expected_howiki-20080616-page.sql", "./process_page_sql.rb"] ]
-    comparison_groups.each do |original_file_name, actual_file_name, expected_file_name, script|
-      system("cat #{program_test_directory + original_file_name} | #{script} 3 #{0 if script == "./process_redirect_sql.rb"} | ./process_remove_last_comma.rb > #{program_test_directory + actual_file_name}")
-      file1 = File.open("#{program_test_directory + actual_file_name}")
-      file2 = File.open("#{program_test_directory + expected_file_name}")
-      assert_equal file2.read, file1.read, "Inconsistency between #{actual_file_name} and #{expected_file_name} derived from #{program_test_directory + original_file_name}"
+["simplified_original_howiki-20080616-page.sql", "expected_howiki-20080616-page.sql"],
+["simplified_original_howiki-20080616-page_mod_1.sql", "expected_howiki-20080616-page.sql"],
+["simplified_original_howiki-20080616-page_mod_2.sql", "expected_howiki-20080616-page.sql"] ]
+    comparison_groups.each do |original_file_name, expected_file_name|
+      File.open("#{@program_test_directory + original_file_name}") do |original_file|
+        intermediate_file = StringIO.new
+        ProcessPageSql.new.main_method(repository_id, original_file, intermediate_file)
+        intermediate_file.rewind
+
+        actual_file = StringIO.new
+        ProcessRemoveLastComma.new.main_method(intermediate_file, actual_file)
+        actual_file.rewind
+
+        File.open("#{@program_test_directory + expected_file_name}") do |expected_file|
+          assert_equal expected_file.read, actual_file.read, "Inconsistency between actual and expected results derived from #{@program_test_directory + original_file_name}"
+        end
+      end
+    end
+  end
+
+  def test_howiki_redirects
+    repository_id = 3
+    maximum_repository_statements = 0
+    redirect_comparison_groups = [ ["original_howiki_redirect.sql", "expected_howiki_redirect.sql"], 
+["original_howiki_redirect_mod_1.sql", "expected_howiki_redirect.sql"] ]
+    redirect_comparison_groups.each do |original_file_name, expected_file_name|
+      File.open("#{@program_test_directory + original_file_name}") do |original_file|
+        intermediate_file = StringIO.new
+        ProcessRedirectSql.new.main_method(repository_id, maximum_repository_statements, original_file, intermediate_file)
+        intermediate_file.rewind
+
+        actual_file = StringIO.new
+        ProcessRemoveLastComma.new.main_method(intermediate_file, actual_file)
+        actual_file.rewind
+
+        File.open("#{@program_test_directory + expected_file_name}") do |expected_file|
+          assert_equal expected_file.read, actual_file.read, "Inconsistency between actual and expected results derived from #{@program_test_directory + original_file_name}"
+        end
+      end
     end
   end
 
@@ -36,10 +65,10 @@ class TestSQLParsing < Test::Unit::TestCase
   def test_new_statement_addition
     program_test_directory = "program_test_data/"
     comparison_groups = [
-["original_howiki_redirect.sql", "actual_howiki_redirect_with_new_statements.sql", "expected_howiki_redirect_with_new_statements.sql", "./process_redirect_sql.rb", [3, 1] ], 
-["nomainspace_howiki_redirect.sql", "actual_howiki_redirect_with_nomainspace.sql", "expected_howiki_redirect_with_nomainspace.sql", "./process_redirect_sql.rb", [3, 1] ] 
+["original_howiki_redirect.sql", "actual_howiki_redirect_with_new_statements.sql", "expected_howiki_redirect_with_new_statements.sql", [3, 1] ], 
+["nomainspace_howiki_redirect.sql", "actual_howiki_redirect_with_nomainspace.sql", "expected_howiki_redirect_with_nomainspace.sql", [3, 1] ] 
 ]
-    comparison_groups.each do |original_file_name, actual_file_name, expected_file_name, script, options|
+    comparison_groups.each do |original_file_name, actual_file_name, expected_file_name, options|
       process_redirect_sql_object = ProcessRedirectSql.new
       process_remove_last_comma_object = ProcessRemoveLastComma.new
       repository_id, maximum_repository_statements = options
